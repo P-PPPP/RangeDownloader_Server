@@ -1,0 +1,5 @@
+{
+    "SAFTY_IP":["172.16.130.2","*","localhost"],
+    "SLAVEIP":"127.0.0.1",
+    "SLAVEPORT":7890
+}
