@@ -6,3 +6,4 @@ uvicorn[standard]
 argparse
 psutil
 websockets
+schedule
