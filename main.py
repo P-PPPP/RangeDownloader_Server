@@ -1,5 +1,5 @@
 #Main For Alist Ver0.1
-import json, argparse , uvicorn , uuid , time
+import json, argparse , uvicorn , uuid , asyncio
 from fastapi import FastAPI , WebSocket
 from pydantic import BaseModel
 import FFmpeg_Core
@@ -17,6 +17,7 @@ class depoly(BaseModel):
     time_end :int
 
 def get_download_url(play_url)->str:
+    #针对可能需要解析的情况
     return play_url
 
 @app.get("/ping")
@@ -25,22 +26,37 @@ def ping():
 
 @app.post("/api/create_segment")
 def depoly_download(depoly_inf:depoly):
-    seg_key = uuid.uuid5(namespace=uuid.NAMESPACE_DNS,name=depoly_inf.url+str(depoly_inf.time_start)+str(depoly_inf.time_end)+str(time.time()))
+    seg_key = uuid.uuid5(namespace=uuid.NAMESPACE_DNS,name=depoly_inf.url+str(depoly_inf.time_start)+str(depoly_inf.time_end))# 生成较为唯一的ID
+    if FFmpeg_Core.Seg_Keys.get(seg_key) != None or FFmpeg_Core.Seg_Keys.get(seg_key) in [0,1,3]: return seg_key # 检测是否已经在队列中
+    FFmpeg_Core.Seg_Keys.update({seg_key:0}) #  -1: Error , 0: Not Started , 1: Running , 2: Canceled , 3: Finished 
     FFmpeg_Core.threadPool.submit(FFmpeg_Core.Multi_Thread_Seeking,kwargs={"Start_Time":depoly_inf.time_start,"End_Time":depoly_inf.time_end,
-    "Url":get_download_url(depoly_inf.url),"Save_Name":seg_key,"Seek_type":"Input","Threads":1,"Args":"","seg_key":seg_key})
+    "Url":get_download_url(depoly_inf.url),"Save_Name":seg_key,"Seek_type":"Input","Threads":1,"Args":"","seg_key":seg_key}) #加入到队列池中
     return seg_key
 
 @app.websocket('/api/pools_status')
 async def websocket_endpoint(websocket: WebSocket):
     """
+    返回状态
     Req: {"seg_key":"xxxx"}
-    Resp: {"code":-1/0/1,"data":"","DownloadUrl":"","error":""}   
-    -1: Failed , 0: Running , 1:Finished
+    Resp: {"msg":"","data":"","downloadurl":"","code":""}   
     """
     await websocket.accept()
-    data = await websocket.receive_json()
+    seg_k = await websocket.receive_json()
     while True:
-        await websocket.send_text(f"Message text was: {data}") 
+        results = FFmpeg_Core.Getstatus(seg_key=seg_k["seg_key"])
+        if results == 0 : r = {"msg":"Panding","code":results}
+        if results == 1 : r = {"msg":"Downloading","code":results,"Progress":00.00}
+        if results == 2 : r = {"msg":"Canceled","code":results}
+        if results == 3: r = {"msg":"Finished","DownloadUrl":"","code":results}
+        else: r = {"msg":"ERROR","code":results}
+        await websocket.send_text(f"Message text was: {r}")
+        await asyncio.sleep(1)
+        if results == 3 or results == -1 or results == None: break
+    websocket.close()
+
+@app.get('/debug')
+def s():
+    return FFmpeg_Core.Progress
 
 if __name__ == "__main__":
     uvicorn.run(app="main:app",port=Config["SLAVEPORT"],host=Config["SLAVEIP"])

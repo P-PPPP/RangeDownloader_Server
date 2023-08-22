@@ -52,7 +52,7 @@ class PROGRESS:
 #    ...
 #}
 Progress = PROGRESS()
-
+Seg_Keys = {}
 def Multi_Thread_Seeking(Start_Time:int,End_Time:int,Url:str,Save_Name:str,seg_key:str,Seek_type:str="Input",Threads:int=1,Args:str="",filetype:str="video",filesuffix:str="mp4"):
     #   http://trac.ffmpeg.org/wiki/Seeking
     #   In the documentation, the following is the format of the seek command:
@@ -95,7 +95,7 @@ def Multi_Thread_Seeking(Start_Time:int,End_Time:int,Url:str,Save_Name:str,seg_k
             #os.rename(f"0_{seg_key}.{filesuffix}",f"{Save_Name}_{filetype}.{filesuffix}")
             shutil.move(f"0_{seg_key}.{filesuffix}",f"{Save_Name}_{filetype}.{filesuffix}") # Same As Rename
         return True
-    
+    Seg_Keys.update({seg_key:1})
     Save_Name = shlex.quote(Save_Name) # Issue3
     Progress.add_task(seg_key=seg_key,Save_Name=Save_Name)
     Thread(target=main).start()
@@ -117,6 +117,7 @@ def evaule_command(Command:str,Instance_id:int,seg_key:str,Duration:int):
         ####### thread operation#######
         if Progress.get_item_instance(seg_key=seg_key,k=str(Instance_id))["running"] == 4:
             Kill_FFmpeg(p.pid)
+            Seg_Keys.update({seg_key:2})
             return False
         if Progress.get_item_instance(seg_key=seg_key,k=str(Instance_id))["running"] == 2:
             #restart thread when thread is running 
@@ -145,6 +146,7 @@ def evaule_command(Command:str,Instance_id:int,seg_key:str,Duration:int):
     #Maybe the thread is finished...without any risk...
     Progress.get_item_instance(seg_key=seg_key,k=str(Instance_id))["progress"] = 1
     Progress.get_item_instance(seg_key=seg_key,k=str(Instance_id))["running"]=3
+    Seg_Keys.update({seg_key:3})
 
 def Kill_FFmpeg(pid):
     # Exit Thread
@@ -171,6 +173,10 @@ def thread_operation(seg_key:str,Instance_id:int,running:int):
     Progress.get_item_instance(seg_key=seg_key,k=str(Instance_id))["running"]=running
     return True
 
+
+def Getstatus(seg_key:str):
+    try: return Seg_Keys.get(seg_key)
+    except: return -1
 
 #### __init__####
 threadPool = ThreadPoolExecutor(max_workers=1,thread_name_prefix='Segment_Thread')
