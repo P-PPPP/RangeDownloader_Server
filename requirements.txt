@@ -1,6 +1,4 @@
 requests
-netaddr
-ipaddress
 fastapi
 uvicorn[standard]
 argparse
