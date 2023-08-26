@@ -1,11 +1,9 @@
-let PROXY_URL = 'proxy1';
+let PROXY_URL = 'proxy';
 let videoPlayerAppearedOnce = false;    // 跟踪是否已经检测到video-player组件
 let videoPlayerDisappearedOnce = false; // 跟踪video-player组件是否已消失
 const setProxyURL = (videoURL) => {
     const mappings = {
-        'https://proxy1.ddindexs.com': 'proxy1',
-        'https://proxy2.ddindexs.com': 'proxy3',
-        'https://proxy3.ddindexs.com': 'proxy3',
+        'https://proxy.example.com': 'proxy',
     };
     const origin = new URL(videoURL).origin;
     PROXY_URL = mappings[origin] || PROXY_URL;
@@ -105,7 +103,7 @@ function executeFunction() {
             time_end: endTime
         };
         updateContent('loading');
-        fetch(`https://${PROXY_URL}.range.ddindexs.com/api/create_segment`, {
+        fetch(`https://${PROXY_URL}.range.example.com/api/create_segment`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -128,7 +126,7 @@ function executeFunction() {
                     const maxReconnectAttempts = 5;
                     const initialDelay = 5000;
                     function initializeWebSocket() {
-                        ws = new WebSocket(`wss://${PROXY_URL}.range.ddindexs.com/api/pools_status`);
+                        ws = new WebSocket(`wss://${PROXY_URL}.range.example.com/api/pools_status`);
                         ws.onopen = function (event) {
                             reconnectAttempts = 0; // 重置重连尝试次数
                             ws.send(JSON.stringify({ "seg_k": segkey }));
@@ -208,7 +206,7 @@ function updateContent(status, data = null) {
             `;
     } else if (status === 'completed') {
         statusDiv.innerHTML = `
-                <button class="button-gradient" onclick="downloadFile(event, 'https://${PROXY_URL}.file.ddindexs.com/${data}.mp4');">Download</button>
+                <button class="button-gradient" onclick="downloadFile(event, 'https://${PROXY_URL}.file.example.com/${data}.mp4');">Download</button>
             `;
         var sendButton = document.getElementById("sendButton");
         sendButton.innerHTML = `再切一下`
