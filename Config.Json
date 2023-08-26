@@ -1,7 +1,0 @@
-{
-    "SAFTY_IP":["172.16.130.2","*","localhost"],
-    "DOWNLOAD_PATH":"./",
-    "EVERYDAY_CHECK_SCHEDULE":"08:00",
-    "HOSTIP":"127.0.0.1",
-    "HOSTPORT":7653
-}
