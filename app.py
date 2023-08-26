@@ -7,6 +7,7 @@ import uuid
 import asyncio
 import time
 import schedule
+import websockets
 from fastapi import FastAPI, WebSocket
 from pydantic import BaseModel
 import FFmpeg_Core
@@ -57,11 +58,11 @@ def check_disk_space_is_not_good(space=3.5):
 # def ping():
 #     return "pong"
 
-proxy_urls = ["https://proxy1.ddindexs.com/", "https://proxy2.ddindexs.com/", "https://proxy3.ddindexs.com/"]
+proxy_urls = ["https://proxy.example.com/"]
 @app.post("/api/create_segment")  # 创建分割任务
 def create_segment(depoly_inf: depoly):
         # 校验阶段
-    if depoly_inf.url.startswith("https://proxy1.ddindexs.com/") or depoly_inf.url.startswith("https://proxy2.ddindexs.com/") or depoly_inf.url.startswith("https://proxy3.ddindexs.com/"):
+    if depoly_inf.url.startswith("https://proxy.example.com/"):
         for proxy_url in proxy_urls: depoly_inf.url = depoly_inf.url.replace(proxy_url, "http://localhost:5243/")
         if depoly_inf.time_start > depoly_inf.time_end:
             return ResponseBody_Json(ResponseBody(code=0, data=None, msg="😓你连开始时间和结束时间都能搞反的吗？", key=None))
@@ -112,8 +113,13 @@ async def websocket_endpoint(websocket: WebSocket):
             "code": 1,
             "time": time.time()
         }
-        await websocket.send_text(f"{json.dumps(results)}")
-        await asyncio.sleep(0.5)
+        
+        try:
+            await websocket.send_text(f"{json.dumps(results)}")
+            await asyncio.sleep(0.5)
+        except websockets.exceptions.ConnectionClosedOK:
+            break
+
         if results:
             if results["data"]["running"] not in [0, 1]:
                 break
